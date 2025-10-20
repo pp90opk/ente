@@ -1,9 +1,6 @@
 name: "Publish ghcr (server)"
 
 on:
-    # Run automatically on 15th of every month, at 05:00 UTC.
-    schedule:
-        - cron: '0 5 15 * *'
     # Run manually if needed to publish out of schedule.
     workflow_dispatch:
 
