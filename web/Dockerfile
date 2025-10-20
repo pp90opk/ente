@@ -14,7 +14,6 @@ RUN yarn config set network-timeout 900000 -g
 RUN yarn install
 RUN yarn build:photos
 RUN yarn build:accounts
-RUN yarn build:auth
 RUN yarn build:cast
 
 FROM nginx
@@ -23,7 +22,6 @@ WORKDIR /out
 
 COPY --from=builder /build/apps/photos/out /out/photos
 COPY --from=builder /build/apps/accounts/out /out/accounts
-COPY --from=builder /build/apps/auth/out /out/auth
 COPY --from=builder /build/apps/cast/out /out/cast
 
 COPY <<EOF /etc/nginx/conf.d/default.conf
@@ -40,10 +38,6 @@ server {
     location / { try_files \$uri \$uri.html /index.html; }
 }
 server {
-    listen 3003; root /out/auth;
-    location / { try_files \$uri \$uri.html /index.html; }
-}
-server {
     listen 3004; root /out/cast;
     location / { try_files \$uri \$uri.html /index.html; }
 }
@@ -52,7 +46,6 @@ EOF
 EXPOSE 3000
 EXPOSE 3001
 EXPOSE 3002
-EXPOSE 3003
 EXPOSE 3004
 
 ENV ENTE_API_ORIGIN=http://localhost:8080
