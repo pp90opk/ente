@@ -20,7 +20,6 @@ jobs:
               with:
                   dockerfile: web/Dockerfile
                   directory: web
-                  # Resultant package name will be ghcr.io/ente-io/web
                   image: web
                   registry: ghcr.io
                   enableBuildKit: true
