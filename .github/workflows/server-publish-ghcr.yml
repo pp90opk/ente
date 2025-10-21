@@ -1,4 +1,4 @@
-name: "Publish ghcr (web)"
+name: "Publish ghcr (server)"
 
 on:
     # Run manually if needed to publish out of schedule.
