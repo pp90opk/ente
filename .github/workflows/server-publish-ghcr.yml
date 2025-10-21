@@ -1,49 +1,42 @@
 name: "Publish ghcr (server)"
 
 on:
-  # Run manually if needed to publish out of schedule.
-  workflow_dispatch:
+    # Run manually if needed to publish out of schedule.
+    workflow_dispatch:
 
 permissions:
-  contents: write  # for pushing the `ghcr/server` branch
-  packages: write  # for pushing to ghcr.io
+    contents: write  # for pushing the `ghcr/server` branch
+    packages: write
 
 jobs:
-  publish:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    publish:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Determine commit from prod museum
+              run: |
+                  echo "museum_commit=$(curl -s https://api.ente.io/ping | jq -r .id)" >> $GITHUB_ENV
 
-      # Explicitly log in to the GitHub Container Registry (GHCR)
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ env.museum_commit }}
 
-      # Set up QEMU for multi-platform emulation (e.g., building arm64 on amd64)
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+            - name: Build and push
+              uses: mr-smithers-excellent/docker-build-push@v6
+              with:
+                  dockerfile: server/Dockerfile
+                  directory: server
+                  # Resultant package name will be ghcr.io/ente-io/server
+                  image: server
+                  registry: ghcr.io
+                  enableBuildKit: true
+                  multiPlatform: true
+                  platform: linux/amd64,linux/arm64
+                  buildArgs: GIT_COMMIT=${{ env.museum_commit }}
+                  tags: ${{ env.museum_commit }}, latest
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
 
-      # This is the step that failed, but it is correct
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # Build and push using the official, integrated action
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          # Context is the 'directory' from your old action
-          context: ./server
-          # File is the 'dockerfile' from your old action
-          file: ./server/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          # Tags must be fully qualified: ghcr.io/OWNER/IMAGE:TAG
-          tags: ghcr.io/${{ github.repository_owner }}/server:latest
-
-      - name: Update branch ghcr/server to point to source commit
-        run: |
-          git push -f origin HEAD:refs/heads/ghcr/server
+            - name: Update branch ghcr/server to point to source commit
+              run: |
+                  git push -f origin HEAD:refs/heads/ghcr/server
